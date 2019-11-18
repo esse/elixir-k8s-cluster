@@ -1,0 +1,65 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cluster
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cluster
+
+  template:
+    metadata:
+      labels:
+        app: cluster
+    spec:
+      containers:
+      - name: phoenix-cluster
+        image: "essepl/elixir-cluster:latest" #chat:libcluster #alvises/phoenix-chat-example:libcluster-kube
+        ports:
+        - containerPort: 4000
+        env:
+        - name: PORT
+          value: "4000"
+        - name: PHOENIX_CHAT_HOST
+          value: "localhost"
+        - name: RELEASE_COOKIE
+          value: "secret"
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+
+
+---
+kind: Service
+apiVersion: v1
+
+metadata:
+  name: cluster
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: cluster
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 4000
+
+---
+kind: Service
+apiVersion: v1
+
+metadata:
+  name: cluster-nodes
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app: cluster
+  ports:
+    - name: epmd
+      port: 4369
